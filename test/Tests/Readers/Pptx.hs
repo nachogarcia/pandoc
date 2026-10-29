@@ -44,5 +44,9 @@ tests = [ testGroup "basic"
             "text extraction"
             "pptx-reader/basic.pptx"
             "pptx-reader/basic.native"
+          , testCompare
+            "speaker notes"
+            "pptx-reader/notes.pptx"
+            "pptx-reader/notes.native"
           ]
         ]

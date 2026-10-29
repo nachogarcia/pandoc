@@ -1,0 +1,17 @@
+Pandoc
+  Meta { unMeta = fromList [] }
+  [ Header
+      2 ( "slide-1" , [] , [] ) [ Str "Notes on two paragraphs" ]
+  , Div
+      ( "" , [ "notes" ] , [] )
+      [ Para [ Str "First paragraph of the notes." ]
+      , Para [ Str "Second paragraph." ]
+      ]
+  , Header 2 ( "slide-2" , [] , [] ) [ Str "No notes" ]
+  , Header 2 ( "slide-3" , [] , [] ) [ Str "Empty notes" ]
+  , Header
+      2 ( "slide-4" , [] , [] ) [ Str "Hidden slide with notes" ]
+  , Div
+      ( "" , [ "notes" ] , [] )
+      [ Para [ Str "Notes on the hidden slide." ] ]
+  ]
