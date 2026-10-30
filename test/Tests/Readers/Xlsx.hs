@@ -57,6 +57,11 @@ tests = [ testGroup "basic"
             "xlsx-reader/absolute-targets.xlsx"
             "xlsx-reader/absolute-targets.native"
           ]
+        , testGroup "values"
+          [ testCompare
+            "numbers, booleans and errors"
+            "xlsx-reader/numbers.xlsx"
+            "xlsx-reader/numbers.native"
         , testGroup "dates"
           [ testCompare
             "date and time formats"
@@ -68,3 +73,4 @@ tests = [ testGroup "basic"
             "xlsx-reader/dates-1904.native"
           ]
         ]
+      ]
