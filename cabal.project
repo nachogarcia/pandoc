@@ -13,6 +13,11 @@ source-repository-package
   tag: 89b2686bbc77aba333a79790e39cb08b90c1d75d
   subdir: commonmark
 
+source-repository-package
+  type: git
+  location: https://github.com/jgm/typst-hs.git
+  tag: e6912fbea7e43360567151995ef1886e00e37a0e
+
 -- GHC 9.14 ships base 4.22 and containers 0.8, which are newer than
 -- the upper bounds of these packages allow.
 if impl(ghc >= 9.14)
