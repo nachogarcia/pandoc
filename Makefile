@@ -122,7 +122,7 @@ check-cabal: git-files.txt sdist-files.txt
 	do \
 	     pushd $$pkg ; \
 	     cabal check --ignore=missing-upper-bounds ; \
-	     cabal outdated ; \
+	     cabal outdated --exit-code || exit 1 ; \
 	     popd ; \
 	done
 	! grep 'git:' cabal.project # use only released versions
