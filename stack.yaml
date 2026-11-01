@@ -37,7 +37,6 @@ extra-deps:
 - commonmark-pandoc-0.3.0.2
 - commonmark-extensions-0.2.7.3
 - djot-0.1.4.3
-- typst-0.12
 - yamlet-1.0.0.1
 - yamlet-aeson-1.0.0.1
 # yamlet and yamlet-aeson need newer versions than the snapshot has:
@@ -50,6 +49,8 @@ extra-deps:
 - git: https://github.com/jgm/commonmark-hs.git
   commit: 89b2686bbc77aba333a79790e39cb08b90c1d75d
   subdirs: [commonmark]
+- git: https://github.com/jgm/typst-hs.git
+  commit: c5548ce803657545a9672e919d5b9a8a805ed8f1
 # needed because not yet in nixpkgs:
 - pandoc-types-1.23.1.2
 # needed because not yet in nixpkgs:

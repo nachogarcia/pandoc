@@ -152,9 +152,9 @@ pPrTagOrder =
     , "pPrChange"
     ] [0..])
 
-sortSquashed :: M.Map Text Int -> [Element] -> [Element]
+sortSquashed :: M.Map Text Int -> Set.Set Element -> [Element]
 sortSquashed tagOrder l =
-  sortBy (comparing tagIndex) l
+  sortBy (comparing tagIndex) (Set.toList l)
   where
     tagIndex :: Element -> Int
     tagIndex el =
@@ -162,8 +162,10 @@ sortSquashed tagOrder l =
       where tag = (qName . elName) el
 
 squashProps :: M.Map Text Int -> EnvProps -> [Element]
-squashProps tagOrder (EnvProps Nothing es) = sortSquashed tagOrder es
-squashProps tagOrder (EnvProps (Just e) es) = sortSquashed tagOrder (e : es)
+squashProps tagOrder (EnvProps Nothing es) =
+  sortSquashed tagOrder es
+squashProps tagOrder (EnvProps (Just e) es) =
+  sortSquashed tagOrder (Set.insert e es)
 
 -- | Certain characters are invalid in XML even if escaped.
 -- See #1992
@@ -545,7 +547,7 @@ blockToOpenXML' opts (Para lst)
                        else "Body Text"
       paraProps <- local (\env -> env{ envParaProperties =
                                         envParaProperties env <>
-                                        EnvProps (Just bodyTextStyle) [] })
+                                        EnvProps (Just bodyTextStyle) mempty })
                       (getParaProps displayMathPara)
       modify $ \s -> s { stFirstPara = False }
       contents <- inlinesToOpenXML opts lst
@@ -623,7 +625,7 @@ blockToOpenXML' opts (Figure (ident, _, _) (Caption _ longcapt) body) = do
     then "Figure"
     else "Captioned Figure"
   paraProps <- local
-    (\env -> env { envParaProperties = EnvProps (Just prop) [] <>
+    (\env -> env { envParaProperties = EnvProps (Just prop) mempty <>
                                        envParaProperties env })
     (getParaProps False)
 
@@ -770,14 +772,28 @@ getTextProps = do
   let langnode = case mblang of
                    Nothing -> mempty
                    Just l  -> EnvProps Nothing
-                               [mknode "w:lang" [("w:val", l)] ()]
+                               (Set.singleton
+                                (mknode "w:lang" [("w:val", l)] ()))
   let squashed = squashProps rPrTagOrder (props <> langnode)
   return [mknode "w:rPr" [] squashed | (not . null) squashed]
 
 withTextProp :: PandocMonad m => Element -> WS m a -> WS m a
-withTextProp d p =
-  local (\env -> env {envTextProperties = ep <> envTextProperties env}) p
-  where ep = if isStyle d then EnvProps (Just d) [] else EnvProps Nothing [d]
+withTextProp d
+  | isStyle d = local (\env -> env{ envTextProperties = EnvProps (Just d)
+                                     (otherElements (envTextProperties env)) })
+  | isToggle d = local (\env ->
+                          let EnvProps mbsty elts = envTextProperties env
+                          in  env{ envTextProperties = EnvProps mbsty $
+                                    if d `Set.member` elts
+                                       then Set.delete d elts
+                                       else Set.insert d elts })
+  | otherwise = local (\env -> env{ envTextProperties =
+                                    EnvProps Nothing (Set.singleton d) <>
+                                    envTextProperties env })
+
+-- Let emphasis flip-flop, so emph within emph is upright:
+isToggle :: Element -> Bool
+isToggle el = qName (elName el) `elem` ["i", "iCs"]
 
 withTextPropM :: PandocMonad m => WS m Element -> WS m a -> WS m a
 withTextPropM md p = do
@@ -803,7 +819,8 @@ getParaProps displayMathPara = do
         | otherwise = [mknode "w:numPr" []
                         [ mknode "w:ilvl" [("w:val",tshow listLevel)] ()
                         , mknode "w:numId" [("w:val",tshow numid)] () ]]
-  return $ case squashProps pPrTagOrder (EnvProps Nothing listPr <> props) of
+  return $ case squashProps pPrTagOrder
+                  (EnvProps Nothing (Set.fromList listPr) <> props) of
                 [] -> []
                 ps -> [mknode "w:pPr" [] ps]
 
@@ -1046,7 +1063,7 @@ inlineToOpenXML' opts (Math mathType str) = do
          tprops <- asks envTextProperties
          let r' = fromXLElement r
              mbhl = listToMaybe
-               [ e | e <- otherElements tprops
+               [ e | e <- Set.toList (otherElements tprops)
                     , XML.qName (XML.elName e) == "highlight"
                     , XML.qPrefix (XML.elName e) == Just "w" ]
          return [Elem (maybe r' (`highlightMathRuns` r') mbhl)]
@@ -1282,8 +1299,10 @@ withDirection x = do
   -- them to stack up.
   let hasBidi = any (\e -> (qName . elName) e == "bidi") (otherElements paraProps)
       hasRtl = any (\e -> (qName . elName) e == "rtl") (otherElements textProps)
-      paraProps' = filter (\e -> (qName . elName) e /= "bidi") (otherElements paraProps)
-      textProps' = filter (\e -> (qName . elName) e /= "rtl") (otherElements textProps)
+      paraProps' = Set.filter (\e -> (qName . elName) e /= "bidi")
+                     (otherElements paraProps)
+      textProps' = Set.filter (\e -> (qName . elName) e /= "rtl")
+                     (otherElements textProps)
       paraStyle = styleElement paraProps
       textStyle = styleElement textProps
   if not isRTL && not hasBidi && not hasRtl
@@ -1293,8 +1312,10 @@ withDirection x = do
     else if isRTL
     -- if we are going right-to-left, we (re?)add the properties.
     then flip local x $
-         \env -> env { envParaProperties = EnvProps paraStyle $ mknode "w:bidi" [] () : paraProps'
-                     , envTextProperties = EnvProps textStyle $ mknode "w:rtl" [] () : textProps'
+         \env -> env { envParaProperties = EnvProps paraStyle $
+                        Set.insert (mknode "w:bidi" [] ()) paraProps'
+                     , envTextProperties = EnvProps textStyle $
+                        Set.insert (mknode "w:rtl" [] ()) textProps'
                      }
     else flip local x $ \env -> env { envParaProperties = EnvProps paraStyle paraProps'
                                     , envTextProperties = EnvProps textStyle textProps'
