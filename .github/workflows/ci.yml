@@ -121,6 +121,7 @@ jobs:
 
     - name: Build and test
       run: |
+          make check-sdist
           cabal build ${{ matrix.versions.cabalopts }} --enable-tests --disable-optimization all
           cabal test ${{ matrix.versions.cabalopts }} --disable-optimization all
 

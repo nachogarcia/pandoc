@@ -69,14 +69,14 @@ listMarkerToId (NumberMarker sty delim n) = T.pack $
 
 
 data EnvProps = EnvProps{ styleElement  :: Maybe Element
-                        , otherElements :: [Element]
+                        , otherElements :: Set.Set Element
                         } deriving (Show)
 
 instance Semigroup EnvProps where
-  EnvProps s es <> EnvProps s' es' = EnvProps (s <|> s') (es ++ es')
+  EnvProps s es <> EnvProps s' es' = EnvProps (s <|> s') (es <> es')
 
 instance Monoid EnvProps where
-  mempty = EnvProps Nothing []
+  mempty = EnvProps Nothing mempty
   mappend = (<>)
 
 data WriterEnv = WriterEnv
@@ -195,7 +195,9 @@ pStyleM styleName = do
 withParaProp :: PandocMonad m => Element -> WS m a -> WS m a
 withParaProp d p =
   local (\env -> env {envParaProperties = ep <> envParaProperties env}) p
-  where ep = if isStyle d then EnvProps (Just d) [] else EnvProps Nothing [d]
+  where ep = if isStyle d
+                then EnvProps (Just d) mempty
+                else EnvProps Nothing (Set.singleton d)
 
 withParaPropM :: PandocMonad m => WS m Element -> WS m a -> WS m a
 withParaPropM md p = do

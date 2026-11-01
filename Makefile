@@ -115,19 +115,27 @@ check-stack:
 	! grep 'git:' stack.yaml # use only released versions
 .PHONY: check-stack
 
-check-cabal: git-files.txt sdist-files.txt
+check-cabal: check-released check-sdist cabal-check
+.PHONY: check-cabal
+
+check-sdist: git-files.txt sdist-files.txt  ## Check that all committed test/data files are in sdist
 	@echo "Checking to see if all committed test/data files are in sdist."
 	diff -u $^
+.PHONY: check-sdist
+
+check-released: ## Check that only released versions of dependencies are used
+	! grep 'git:' cabal.project # use only released versions
+.PHONY: check-released
+
+cabal-check: ## Run cabal check on all packages
 	@for pkg in . pandoc-lua-engine pandoc-server pandoc-cli; \
 	do \
 	     pushd $$pkg ; \
 	     cabal check --ignore=missing-upper-bounds ; \
-	     cabal outdated ; \
+	     cabal outdated --exit-code || exit 1 ; \
 	     popd ; \
 	done
-	! grep 'git:' cabal.project # use only released versions
-
-.PHONY: check-cabal
+.PHONY: cabal-check
 
 check-version-sync:
 	@echo "Checking for match between pandoc and pandoc-cli versions"
