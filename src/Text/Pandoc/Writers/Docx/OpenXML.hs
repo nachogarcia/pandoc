@@ -778,11 +778,22 @@ getTextProps = do
   return [mknode "w:rPr" [] squashed | (not . null) squashed]
 
 withTextProp :: PandocMonad m => Element -> WS m a -> WS m a
-withTextProp d p =
-  local (\env -> env {envTextProperties = ep <> envTextProperties env}) p
-  where ep = if isStyle d
-                then EnvProps (Just d) mempty
-                else EnvProps Nothing (Set.singleton d)
+withTextProp d
+  | isStyle d = local (\env -> env{ envTextProperties = EnvProps (Just d)
+                                     (otherElements (envTextProperties env)) })
+  | isToggle d = local (\env ->
+                          let EnvProps mbsty elts = envTextProperties env
+                          in  env{ envTextProperties = EnvProps mbsty $
+                                    if d `Set.member` elts
+                                       then Set.delete d elts
+                                       else Set.insert d elts })
+  | otherwise = local (\env -> env{ envTextProperties =
+                                    EnvProps Nothing (Set.singleton d) <>
+                                    envTextProperties env })
+
+-- Let emphasis flip-flop, so emph within emph is upright:
+isToggle :: Element -> Bool
+isToggle el = qName (elName el) `elem` ["i", "iCs"]
 
 withTextPropM :: PandocMonad m => WS m Element -> WS m a -> WS m a
 withTextPropM md p = do
