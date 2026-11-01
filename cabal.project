@@ -16,7 +16,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/jgm/typst-hs.git
-  tag: e6912fbea7e43360567151995ef1886e00e37a0e
+  tag: c5548ce803657545a9672e919d5b9a8a805ed8f1
 
 -- GHC 9.14 ships base 4.22 and containers 0.8, which are newer than
 -- the upper bounds of these packages allow.

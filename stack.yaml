@@ -50,7 +50,7 @@ extra-deps:
   commit: 89b2686bbc77aba333a79790e39cb08b90c1d75d
   subdirs: [commonmark]
 - git: https://github.com/jgm/typst-hs.git
-  commit: e6912fbea7e43360567151995ef1886e00e37a0e
+  commit: c5548ce803657545a9672e919d5b9a8a805ed8f1
 # needed because not yet in nixpkgs:
 - pandoc-types-1.23.1.2
 # needed because not yet in nixpkgs:
